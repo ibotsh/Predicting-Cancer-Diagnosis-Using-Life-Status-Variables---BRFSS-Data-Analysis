@@ -30,7 +30,7 @@ factors had the most predictive power.
     factors with clear labels for easier interpretation.
 
 -   **Exploratory Data Analysis:** Created visualizations (bar charts,
-    stacked charts) to identify patterns.
+    stacked charts) to identify patterns. 
 
 -   **Statistical Modeling:** Built and compared two logistic regression
     models using Akaike Information Criterion (AIC) to determine which
