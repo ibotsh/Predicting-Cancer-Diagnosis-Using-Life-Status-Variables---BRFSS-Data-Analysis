@@ -38,7 +38,7 @@ factors had the most predictive power.
     cancer diagnosis.
 
 ## Data Source:
-### <span style="color: red;">**IMPORTANT**:</span>
+<span style="color: red;">**IMPORTANT**:</span>
 - Must download <span style="color: green;">**'brfss2021.csv'**:</span> from website provided below in order to run analysis in R.
 
 -   **Dataset:** CDC BRFSS 2021 (Behavioral Risk Factor Surveillance
