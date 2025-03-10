@@ -1,0 +1,417 @@
+---
+editor: 
+  markdown: 
+    wrap: 72
+---
+
+# Predicting Cancer Diagnosis Using Life Status Variables - BRFSS 2021
+
+## Overview
+
+This project explores whether certain life status factors are associated
+with a cancer diagnosis (excluding skin cancer) using the **Behavioral
+Risk Factor Surveillance System (BRFSS) 2021** dataset from the
+**Centers for Disease Control (CDC)**. The main goal was to see if
+variables like **exercise participation, health insurance type, and
+metropolitan status** had any significant relationship with cancer
+diagnosis.
+
+The idea was to build a model that could predict cancer diagnosis based
+on these variables. I cleaned the data, ran some visualizations, and
+eventually compared two logistic regression models to determine which
+factors had the most predictive power.
+
+### **Approach:**
+
+-   **Data Cleaning:** Removed missing values and irrelevant responses
+    (e.g., refused to answer).
+
+-   **Data Transformation:** Converted categorical variables into
+    factors with clear labels for easier interpretation.
+
+-   **Exploratory Data Analysis (EDA):** Created visualizations (bar
+    charts, stacked charts) to identify patterns.
+
+-   **Statistical Modeling:** Built and compared two logistic regression
+    models using Akaike Information Criterion (AIC) to determine which
+    set of variables most accurately predicted cancer diagnosis.
+
+-   **Key Outcome:** The model including **insurance type, exercise
+    participation, and residential status** was the best predictor for
+    cancer diagnosis.
+
+## Data Source
+
+-   **Dataset:** CDC BRFSS 2021 (Behavioral Risk Factor Surveillance
+    System)
+
+-   **Source Link:** <https://www.cdc.gov/brfss>
+
+### Loading data
+
+```{r}
+### Clear enviornemnt
+
+rm(list = ls())
+
+### Load the libraries
+
+library(tidyverse) 
+library(psych)
+library(lm.beta)
+
+### Load the data file
+
+brf <- read_csv("brfss2021.csv", show_col_types = FALSE)
+
+```
+
+## The objective of this study is to see the correlation between respondents diagnosed with cancer (not skin) against the other life status variables. CHCOCNCR was chosen as the, dependent, response variable as it give the clearest distinction between respondents that have confirmed history of cancer compared to the rest of the population. The goal is to to predict whether variables such as insurance provider, exercise participation, and or metropolitan status, are associated with cancer diagnosis.
+
+------------------------------------------------------------------------
+
+-   SEE BELOW FOR FURTHER BREAK DOWN OF VALUES AND VARIABLES.
+
+```{r}
+
+brf |>
+  select(CHCOCNCR, EXERANY2, MSCODE, PRIMINSR)
+
+```
+
+# Cleaning data
+
+```{r}
+## All four selected variables cleaned from NAs and other issues
+
+Frame <- brf |>
+  select(CHCOCNCR, EXERANY2, MSCODE, PRIMINSR)
+
+# Creating one data frame named 'Frame' with all variables listed above.
+
+Frame <- Frame |>
+  select(CHCOCNCR, EXERANY2, MSCODE, PRIMINSR) |>
+  filter(!(CHCOCNCR %in% c(7, 9)), !(EXERANY2 %in% c(7, 9)), !(PRIMINSR %in% c(6, 77, 99)), !is.na(CHCOCNCR), !is.na(EXERANY2), !is.na(MSCODE), !is.na(PRIMINSR))
+
+# Removing all values that are blank, 'refused' to answer or 'unsure' for all variables. Renaming 'Frame1'
+
+```
+
+### CHCOCNCR
+
+Respondent variable
+
+**Data type:** Binary categorical Has a doctor ever told the respondent
+if they had any form of cancer other then skin cancer.
+
+1 = Yes
+
+2 = No
+
+7 = Don’t know / Not sure
+
+9 = Refused
+
+### EXERANY2
+
+**Data type:** Binary categorical Exercise participation Within the past
+month, outside of work, has the respondent engaged in any form of
+intentional physical exercise? including intentional walks, recreation
+sports or gardening?
+
+1 = Yes they are above
+
+2 = No 7 = Dont know / unsure
+
+9 = Refused
+
+### MSCODE
+
+**Data type:** Categorical ordinal Categorical data that identifies the
+Metropolitan Status Code of the respondent
+
+1 = In the center city of an Metropolitan Statistical Area (MSA)
+
+2 = Outside the center city of an MSA but inside the county containing
+the center city
+
+3 = Inside a suburban county of the MSA
+
+5 = Not in an MSA
+
+### PRIMINSR
+
+**Data type:** Categorical Primary source of health insurance for the
+respondents
+
+1 = plan through employer or union
+
+2 = private plan
+
+3 = medicare
+
+4 = medigap
+
+5 = medicaid
+
+6 = Children´s Health Insurance Program (CHIP)
+
+7 = Military related health care
+
+8 = Indian Health Service
+
+9 = State sponsored health plan
+
+10 = Other government program
+
+88 = No coverage of any type
+
+77 = Don’t know/Not Sure
+
+99 = N/A or missing
+
+-   The objective of this study is to see the correlation between
+    respondents diagnosed with cancer (not skin) against the other life
+    status variables. CHCOCNCR was chosen as the, dependent, response
+    variable as it give the clearest distinction between respondents
+    that have confirmed history of cancer compared to the rest of the
+    population. The goal is to to predict whether variables such as
+    insurance provider, exercise participation, and or metropolitan
+    status, are associated with cancer diagnosis.
+
+# Data Summary
+
+```{r}
+Frame |>
+  summary()
+
+# Basic summary breakdown to identify any outliers (in minimum or maximum) within the values of each variable.
+```
+
+-   After cleaning data, removing all 'refused to answer' or 'unsure'
+    respondents, in order to reduce chances of bias, specifically with
+    the only purely categorical data set 'PRIMINSR', it was essential to
+    keep 88 to account for those without insurance. Additionally, Given
+    the research question is targeted towards adults (people with
+    exercise programs and independent living status) 6 = 'Children´s
+    Health Insurance Program,' was also cut from the data set.
+
+```{r}
+# All values at this point seem essential for the predictive analysis later on. 
+
+Frame1 <- Frame |>
+  mutate(
+    CHCOCNCR = factor(
+      case_when(
+        CHCOCNCR == 1 ~ "Yes",
+        CHCOCNCR == 2 ~ "No")),
+    EXERANY2 = factor(
+      case_when(
+        EXERANY2 == 1 ~ "Yes",
+        EXERANY2 == 2 ~ "No")),
+    MSCODE = factor(
+      case_when(
+        MSCODE == 1 ~ "Metro Center",
+        MSCODE == 2 ~ "Metro Center Outskurt",
+        MSCODE == 3 ~ "Suburbs",
+        MSCODE == 5 ~ "Not in a Metro Area")),
+    PRIMINSR = factor(
+      case_when(
+        PRIMINSR == 1 ~ "Employer or union",
+        PRIMINSR == 2 ~ "private plan",
+        PRIMINSR == 3 ~ "medicare",
+        PRIMINSR == 4 ~ "medigap",
+        PRIMINSR == 5 ~ "medicaid",
+        # PRIMINSR == 6 ~ "Children´s Health Insurance Program",
+        PRIMINSR == 7 ~ "Military related health care",
+        PRIMINSR == 8 ~ "Indian Health Service", 
+        PRIMINSR == 9 ~ "State sponsored health plan", 
+        PRIMINSR == 10 ~ "Other government program", 
+        PRIMINSR == 88 ~ "No coverage of any type"
+        ))
+    )
+    
+# Converting all data into factors and labeling the categorical data, as it makes visualization easier.
+
+```
+
+# Bar Chart
+
+```{r}
+# Typically counts and percentages are used for categorical data statistical summarization. Bar charts and Pie charts are the main methods for visualization.
+
+# Bar chart for respondents that were diagnosed to have some form of cancer other than skin cancer.
+ggplot(Frame1, aes(y = CHCOCNCR)) +
+  geom_bar(fill = "lightblue") + 
+  labs(
+    title = "Diagnosed with Cancer (non skin related)",
+    x = "Respondent Count",
+    y = "Diagnosed"
+  )
+
+# Bar chart for respondents that exercise once a month at least
+ggplot(Frame1, aes(y = EXERANY2)) +
+  geom_bar(fill = "lightgreen") + 
+  labs(
+    title = "Exersise at least Monthly",
+    x = "Respondent Count",
+    y = "Exercise Reported"
+  )
+
+# Bar chart for respondents measuring their metropolitan residential status
+ggplot(Frame1, aes(x = fct_infreq(MSCODE))) +
+  geom_bar(fill = "purple") + 
+  labs(
+    title = "Metropolitan Residential Status",
+    x = "Residential",
+    y = "Respondent Count"
+  )
+
+# Bar chart that identifies primary source of health insurance
+ggplot(Frame1, aes(y = fct_infreq(PRIMINSR))) +
+  geom_bar(fill = "red") + 
+  labs(
+    title = "Primary Source of Health Insurance",
+    x = "Respondent Count",
+    y = "Health Insurance"
+  )
+```
+
+# Bivariate Analysis:
+
+## Exercise vs Cancer
+
+```{r}
+ggplot(Frame1, aes(
+  x = EXERANY2,
+  fill = CHCOCNCR
+)) +
+  geom_bar(position = "fill") +
+    labs(
+      title = "Respondents Who Exercise Monthly with Diagnosed Cancer",
+      y = "Respondent Count Percentage",
+      x = "Cancer Diagnosis",
+      fill = "Monthly Exercise") +
+  theme_classic()
+```
+
+**Observation:**
+
+-   There is not much difference noted among respondents who exercise at
+    least once a month compared to those who do not, with a slightly
+    higher percentage that were not diagnosed with cancer appearing to
+    fall within the "Yes" exercise fill value (meaning those that do
+    exercise seem to have a slightly lower chance of being diagnosed
+    with cancer), wither there is a correlation between the variables
+    remains to be seen.
+
+## Insurance vs Cancer
+
+```{r}
+ggplot(Frame1, aes(
+  y = fct_infreq(PRIMINSR),
+  fill = CHCOCNCR
+)) +
+  geom_bar(position = "fill") +
+    labs(
+    title = "Diagnosed Cancer Respondents with 
+    Primary Health Insurance",
+    x = "Respondent Count Percentage",
+    y = "Health Insurance",
+    fill = "Cancer Diagnosis"
+  ) +
+  theme_classic()
+```
+
+**Observation:**
+
+-   Between medigap (\>1% of the total), military related health care
+    (3%), and medicare (20%), those insurances have the highest
+    percentage of respondents with cancer, it makes sense if medicare,
+    with a high weighted percentage of respondents seem to have a higher
+    amount of cancer. However, the fact that medigap and medicaid with
+    their much lower percentage yield such high cancer responses, leads
+    to more questions as to why that might be. (Possibly tied to older
+    age or military service and exposure to adverse enviornments,
+    further analysis would be needed to confirm).
+
+```{r}
+# Since the selected data is categorical, we will mainly be focusing on the mode (most frequent) for the measure of center.
+
+Frame |>
+  count(PRIMINSR) |>
+  arrange(desc(n)) |>
+  mutate(Percent = n / sum(n) * 100)
+```
+
+-   Below we are counting the frequency of 'PRIMINSR' (each time a
+    respondent enters a value / insurance company) and then arranging it
+    in a way so we can find the most frequent insurer. And, it appears 3
+    == 'medicare' lines up with this amount, followed by 1 == 'plan
+    through employer or union'. However, we also find that over 57% of
+    people in th survey use medicare as their insurance, likely because
+    of the older demographic.
+
+```{r}
+Frame |>
+  count(CHCOCNCR) |>
+  arrange(desc(n))
+
+# We find the majority of people do not have cancer.
+
+Frame |>
+  count(EXERANY2) |>
+    mutate(Percent = n / sum(n) * 100)
+
+# We find the majority of people do not exercise.
+
+Frame |>
+  count(MSCODE) |>
+    mutate(Percent = n / sum(n) * 100)
+
+# We find the majority of people, 37%, who responded live outside the metro followed by the second largest percentage, 29%, of respondents near the city center.
+
+
+Frame |> 
+  count(CHCOCNCR, MSCODE) |> 
+  mutate(Percent = n / sum(n) * 100)
+
+# Comparing the count of various insurance companies we find the majority of people do not have cancer.
+# Bivariate statistics of response variable against Metro residence.
+
+```
+
+-   In comparing cancer diagnosis (1 = yes) to Metro residence we find
+    (1 = City center / 5 = Not living in center), the majority of people
+    not diagnosed with cancer live near the city center, this phenomenon
+    could be related to other factors such as higher earning potential
+    given the higher cost of living, that could trail onto more frequent
+    or higher quality medical access, more walkability (further analysis
+    would be needed to confirm).
+
+# Logistic Regression Models
+
+```{r}
+
+mod1 <- glm(formula = CHCOCNCR ~ MSCODE, data = Frame1, family = binomial())
+summary(mod1)
+
+# Above is the Cancer diagnosis being positive based off of Metro residential status. We find that all categories in MSCODE are statistically significant, given that the p values are less then 0.05 
+
+mod2 <- glm(formula = CHCOCNCR ~ MSCODE + EXERANY2 + PRIMINSR, data = Frame1, family = binomial())
+summary(mod2)
+
+# The above model adds, monthly exercise completion and insurance type to the regression model. 
+
+
+AIC(mod1)
+AIC(mod2) 
+
+```
+
+The model with the lowest number has the best fit. mod2 is the clear
+winner likely due to its additional variables. Adding more values such
+as the respondent exercise regiment or residential location, adds value
+to the prediction of cancer diagnosis.
+
+# Best Model: mod2
