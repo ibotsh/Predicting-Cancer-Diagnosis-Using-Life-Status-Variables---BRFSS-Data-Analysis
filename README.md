@@ -38,8 +38,8 @@ factors had the most predictive power.
     cancer diagnosis.
 
 ## Data Source:
-<span style="color: red;">**IMPORTANT**:</span>
-- Must download <span style="color: green;">**'brfss2021.csv'**:</span> from website provided below in order to run analysis in R.
+**IMPORTANT:**
+- Must download **'brfss2021.csv'** from website provided below in order to run analysis in R. Data file could possably be renamed, if that is the case rename the 'brf <- read_csv("brfss2021.csv", show_col_types = FALSE)' under "Loading data" within the project file, to the approprate file name.
 
 -   **Dataset:** CDC BRFSS 2021 (Behavioral Risk Factor Surveillance
     System)
