@@ -1,4 +1,4 @@
-# Predicting Cancer Diagnosis Using Life Status Variables: BRFSS 2021 Data Set
+# Predicting Cancer Diagnosis Using Life Status Variables: BRFSS 2021 Data Set Usinf R and Rstudio
 
 ## Overview:
 
