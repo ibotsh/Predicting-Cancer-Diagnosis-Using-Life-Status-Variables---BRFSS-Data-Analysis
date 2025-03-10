@@ -15,6 +15,9 @@ on these variables. I cleaned the data, ran some visualizations, and
 eventually compared two logistic regression models to determine which
 factors had the most predictive power.
 
+![000016](https://github.com/user-attachments/assets/0bf8f32d-efd4-469c-a1d0-a424bf4ed20e)
+![000010](https://github.com/user-attachments/assets/c97ed126-ad8d-4e4c-8af4-44b211ede06e)
+
 ### **Approach:**
 
 -   **Data Cleaning:** Removed missing values and irrelevant responses
